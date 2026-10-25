@@ -509,4 +509,105 @@
         if (i <= 10) {
           const mapFields = { peso: r.peso, fuelIni: r.fuelIni, att: r.att, flt: r.flt, tot: r.tot, fuelRim: r.fuelRim, fuelDes: r.fuelDes };
           for (let k in mapFields) {
-            const realKey = k === 'fuelIni' ?
+            const realKey = k === 'fuelIni' ? 'fuel-ini' : (k === 'fuelRim' ? 'fuel-rim' : (k === 'fuelDes' ? 'fuel-des' : k));
+            document.getElementById(`${realKey}-${i}`).value = mapFields[k] || "";
+            const viewElem = document.getElementById(`${realKey}-${i}-view`);
+            if(viewElem) viewElem.innerText = mapFields[k] || "";
+          }
+          document.getElementById(`acc-${i}`).value = r.acc || "";
+          document.getElementById(`dec-${i}`).value = r.dec || "";
+          document.getElementById(`spe-${i}`).value = r.spe || "";
+          document.getElementById(`rif-litri-${i}`).value = r.rifLitri || "";
+        }
+      });
+
+      calcolaRifornimento();
+      chiudiModalStorico();
+    }
+
+    let timerSalvataggio;
+    function salvaAutomaticoPausa() {
+      clearTimeout(timerSalvataggio);
+      timerSalvataggio = setTimeout(salvaSchedaCorrente, 800);
+    }
+
+    function aggiornaBadgeStorico() {
+      const storici = ottieniTuttiIStorici();
+      document.getElementById("count-storico").innerText = Object.keys(storici).length;
+    }
+
+    // Gestione finestra modale dello Storico
+    function apriModalStorico() {
+      const storici = ottieniTuttiIStorici();
+      const container = document.getElementById("lista-storico");
+      container.innerHTML = "";
+
+      const keys = Object.keys(storici).reverse();
+      if (keys.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-500 py-8">Nessun registro salvato.</div>`;
+      } else {
+        keys.forEach(k => {
+          const item = storici[k];
+          const div = document.createElement("div");
+          div.className = "flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100";
+          div.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-800">Data: ${item.data || 'N.D.'}</div>
+              <div class="text-xs text-slate-500">ID: ${item.id}</div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="caricaScheda('${item.id}')" class="bg-sky-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-sky-700">Apri</button>
+              <button onclick="eliminaScheda('${item.id}')" class="bg-red-600 text-white text-xs px-2 py-1.5 rounded font-bold hover:bg-red-700">🗑️</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      document.getElementById("modal-storico").classList.remove("hidden");
+    }
+
+    function chiudiModalStorico() {
+      document.getElementById("modal-storico").classList.add("hidden");
+    }
+
+    function eliminaScheda(id) {
+      if (!confirm("Eliminare definitivamente questo registro?")) return;
+      const storici = ottieniTuttiIStorici();
+      delete storici[id];
+      localStorage.setItem(KEY_STORAGE, JSON.stringify(storici));
+      apriModalStorico();
+      aggiornaBadgeStorico();
+    }
+
+    // Esportazione ed Importazione dei dati in formato JSON (Backup)
+    function esportaJSON() {
+      const storici = localStorage.getItem(KEY_STORAGE) || "{}";
+      const blob = new Blob([storici], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `registro_voli_vvf_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importaJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          const attuali = ottieniTuttiIStorici();
+          Object.assign(attuali, imported);
+          localStorage.setItem(KEY_STORAGE, JSON.stringify(attuali));
+          alert("Importazione completata!");
+          apriModalStorico();
+          aggiornaBadgeStorico();
+        } catch (err) {
+          alert("Errore nel file di backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
