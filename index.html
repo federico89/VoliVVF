@@ -17,9 +17,18 @@
       body { background: white !important; padding: 0 !important; }
       .sheet-container { box-shadow: none !important; border: none !important; max-width: 100% !important; }
     }
-    input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
-    .input-write { background-color: #fffde7; cursor: pointer; }
-    .input-write:focus { background-color: #ffffff; outline: 2px solid #eab308; }
+    /* Campi manuali in giallo chiaro */
+    .input-write { 
+      background-color: #fffde7 !important; 
+      border: 1.5px solid #facc15 !important; 
+      cursor: pointer; 
+    }
+    /* Campi automatici in grigio chiaro */
+    .input-auto { 
+      background-color: #f1f5f9 !important; 
+      border: 1px solid #cbd5e1 !important; 
+      cursor: not-allowed; 
+    }
   </style>
 </head>
 <body class="bg-slate-200 text-slate-800 font-sans min-h-screen p-2 md:p-6">
@@ -73,12 +82,12 @@
     <!-- LEGENDA COLORI -->
     <div class="mb-4 p-2 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap gap-4 text-xs font-medium no-print">
       <div class="flex items-center gap-1.5">
-        <span class="w-4 h-4 bg-amber-100 border border-amber-400 rounded"></span>
-        <span>Giallo: <strong>Tocca per aprire il popup di inserimento facilitato</strong></span>
+        <span class="w-4 h-4 bg-[#fffde7] border border-yellow-400 rounded"></span>
+        <span>Giallo: <strong>Campi manuali (Tocca per inserire)</strong></span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="w-4 h-4 bg-slate-100 border border-slate-300 rounded"></span>
-        <span>Azzurro/Grigio: <strong>Calcoli Automatici (Readonly)</strong></span>
+        <span class="w-4 h-4 bg-slate-200 border border-slate-400 rounded"></span>
+        <span>Grigio: <strong>Calcoli Automatici (Readonly)</strong></span>
       </div>
     </div>
 
@@ -110,7 +119,8 @@
     <!-- NOTE E ANNOTAZIONI -->
     <div class="mb-6">
       <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annotazioni / Anomalie / Missioni Operative</label>
-      <textarea id="note-estese" readonly onclick="apriPromptPopup('note-estese', 'Annotazioni / Missione', 'textarea')" rows="4" class="w-full input-write border border-slate-300 rounded-lg p-3 text-sm font-sans resize-none cursor-pointer" placeholder="Tocca qui per inserire le annotazioni..."></textarea>
+      <div onclick="apriPromptPopup('note-estese', 'Annotazioni / Missione', 'textarea')" id="note-estese-view" class="w-full input-write rounded-lg p-3 text-sm font-sans min-h-[90px] cursor-pointer whitespace-pre-wrap">Tocca qui per inserire le annotazioni...</div>
+      <textarea id="note-estese" class="hidden"></textarea>
     </div>
 
     <!-- CALCOLATORE RIFORNIMENTO JET-A1 IN FONDO -->
@@ -121,11 +131,13 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Rimanente Totale (kg)</label>
-          <input type="text" id="rif-rimanente" readonly onclick="apriPromptPopup('rif-rimanente', 'Fuel Rimanente Totale (kg)', 'number')" class="w-full input-write border border-slate-300 rounded p-2 text-base font-bold text-slate-800 text-center cursor-pointer" placeholder="es. 250">
+          <div onclick="apriPromptPopup('rif-rimanente', 'Fuel Rimanente Totale (kg)', 'number')" id="rif-rimanente-view" class="w-full input-write rounded p-3 text-base font-bold text-slate-800 text-center cursor-pointer">es. 250</div>
+          <input type="hidden" id="rif-rimanente">
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Desiderato Totale (kg)</label>
-          <input type="text" id="rif-desiderato" readonly onclick="apriPromptPopup('rif-desiderato', 'Fuel Desiderato Totale (kg)', 'number')" class="w-full input-write border border-slate-300 rounded p-2 text-base font-bold text-slate-800 text-center cursor-pointer" placeholder="es. 600">
+          <div onclick="apriPromptPopup('rif-desiderato', 'Fuel Desiderato Totale (kg)', 'number')" id="rif-desiderato-view" class="w-full input-write rounded p-3 text-base font-bold text-slate-800 text-center cursor-pointer">es. 600</div>
+          <input type="hidden" id="rif-desiderato">
         </div>
         <div class="bg-emerald-100 border border-emerald-400 p-3 rounded-lg text-center">
           <label class="block text-xs font-bold text-emerald-900 uppercase">Rifornimento Necessario</label>
@@ -145,9 +157,7 @@
         <button onclick="chiudiPromptPopup(false)" class="text-slate-400 hover:text-red-600 font-bold text-2xl">&times;</button>
       </div>
       
-      <div id="modal-body-container" class="py-2">
-        <!-- Input dinamico inserito da JS -->
-      </div>
+      <div id="modal-body-container" class="py-2"></div>
 
       <div class="flex justify-end gap-3 pt-3 border-t">
         <button onclick="chiudiPromptPopup(false)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm shadow">Annulla</button>
@@ -202,27 +212,26 @@
         tr.className = "hover:bg-slate-50 border-b border-slate-200";
         tr.innerHTML = `
           <td class="p-1 border border-slate-300 text-center font-bold text-slate-500">${i}</td>
-          <td class="p-1 border border-slate-300"><input type="text" id="peso-${i}" readonly onclick="apriPromptPopup('peso-${i}', 'Volo ${i} - Peso Decollo (kg)', 'number')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="fuel-ini-${i}" readonly onclick="apriPromptPopup('fuel-ini-${i}', 'Volo ${i} - Fuel Iniziale (kg)', 'number')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="acc-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 bg-slate-100"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="dec-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 bg-slate-100"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="att-${i}" readonly onclick="apriPromptPopup('att-${i}', 'Volo ${i} - Ora Atterraggio (es. 10:30)', 'text')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="spe-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 bg-slate-100"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="flt-${i}" readonly onclick="apriPromptPopup('flt-${i}', 'Volo ${i} - Flight Time (es. 01:15)', 'text')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="tot-${i}" readonly onclick="apriPromptPopup('tot-${i}', 'Volo ${i} - Total Time (es. 01:25)', 'text')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="fuel-rim-${i}" readonly onclick="apriPromptPopup('fuel-rim-${i}', 'Volo ${i} - Fuel Rimanente (kg)', 'number')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300"><input type="text" id="fuel-des-${i}" readonly onclick="apriPromptPopup('fuel-des-${i}', 'Volo ${i} - Fuel Desiderato (kg)', 'number')" class="w-full input-write p-1.5 rounded text-center font-bold text-slate-800 cursor-pointer"></td>
-          <td class="p-1 border border-slate-300 bg-emerald-50"><input type="text" id="rif-litri-${i}" readonly class="w-full bg-emerald-100 p-1.5 rounded text-center font-bold text-emerald-900" placeholder="0 L"></td>
+          <td class="p-1 border border-slate-300"><div id="peso-${i}-view" onclick="apriPromptPopup('peso-${i}', 'Volo ${i} - Peso Decollo (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="peso-${i}"></td>
+          <td class="p-1 border border-slate-300"><div id="fuel-ini-${i}-view" onclick="apriPromptPopup('fuel-ini-${i}', 'Volo ${i} - Fuel Iniziale (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-ini-${i}"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="acc-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="dec-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
+          <td class="p-1 border border-slate-300"><div id="att-${i}-view" onclick="apriPromptPopup('att-${i}', 'Volo ${i} - Ora Atterraggio (es. 10:30)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="att-${i}"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="spe-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
+          <td class="p-1 border border-slate-300"><div id="flt-${i}-view" onclick="apriPromptPopup('flt-${i}', 'Volo ${i} - Flight Time (es. 01:15)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="flt-${i}"></td>
+          <td class="p-1 border border-slate-300"><div id="tot-${i}-view" onclick="apriPromptPopup('tot-${i}', 'Volo ${i} - Total Time (es. 01:25)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="tot-${i}"></td>
+          <td class="p-1 border border-slate-300"><div id="fuel-rim-${i}-view" onclick="apriPromptPopup('fuel-rim-${i}', 'Volo ${i} - Fuel Rimanente (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-rim-${i}"></td>
+          <td class="p-1 border border-slate-300"><div id="fuel-des-${i}-view" onclick="apriPromptPopup('fuel-des-${i}', 'Volo ${i} - Fuel Desiderato (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-des-${i}"></td>
+          <td class="p-1 border border-slate-300 bg-slate-100"><input type="text" id="rif-litri-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto" placeholder="0 L"></td>
         `;
         tbody.appendChild(tr);
       }
     }
 
-    // Gestione Popup Grande Inserimento
     function apriPromptPopup(elemId, titolo, tipoInput) {
       campoAttivoId = elemId;
       document.getElementById("modal-title").innerText = titolo;
-      const valCorrente = document.getElementById(elemId).value;
+      const valCorrente = document.getElementById(elemId).value || "";
       const container = document.getElementById("modal-body-container");
 
       if (tipoInput === 'textarea') {
@@ -234,8 +243,8 @@
       document.getElementById("modal-input").classList.remove("hidden");
       setTimeout(() => {
         const inp = document.getElementById("popup-input-val");
-        if (inp) { inp.focus(); inp.select(); }
-      }, 100);
+        if (inp) { inp.focus(); if(inp.select) inp.select(); }
+      }, 150);
     }
 
     function chiudiPromptPopup(conferma) {
@@ -243,7 +252,11 @@
         const nuovoVal = document.getElementById("popup-input-val").value;
         document.getElementById(campoAttivoId).value = nuovoVal;
         
-        // Esegui calcoli se legati alla riga o al rifornimento
+        const viewElem = document.getElementById(campoAttivoId + "-view");
+        if (viewElem) {
+          viewElem.innerText = nuovoVal || (campoAttivoId.includes("note") ? "Tocca qui per inserire le annotazioni..." : "");
+        }
+
         if (campoAttivoId.startsWith("att-") || campoAttivoId.startsWith("flt-") || campoAttivoId.startsWith("tot-")) {
           const idx = campoAttivoId.split("-")[1];
           calcolaRiga(idx);
@@ -260,7 +273,6 @@
       campoAttivoId = null;
     }
 
-    // Helper conversioni orarie
     function parseHHMMToMinutes(val) {
       if (!val || !val.includes(":")) return null;
       const parts = val.split(":");
@@ -337,6 +349,12 @@
 
       document.getElementById("rif-risultato-litri").innerHTML = `${litri} <span class="text-base font-normal">Litri</span>`;
       document.getElementById("rif-risultato-kg").innerText = `(${diffKg} kg da imbarcare)`;
+      
+      const viewRim = document.getElementById("rif-rimanente-view");
+      const viewDes = document.getElementById("rif-desiderato-view");
+      if(viewRim) viewRim.innerText = rim || "es. 250";
+      if(viewDes) viewDes.innerText = des || "es. 600";
+
       salvaSchedaCorrente();
     }
 
@@ -383,12 +401,21 @@
       schedaCorrenteId = "VVF_" + Date.now();
       document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
       document.getElementById("data-registro").valueAsDate = new Date();
+      
       document.getElementById("note-estese").value = "";
+      document.getElementById("note-estese-view").innerText = "Tocca qui per inserire le annotazioni...";
       document.getElementById("rif-rimanente").value = "";
+      document.getElementById("rif-rimanente-view").innerText = "es. 250";
       document.getElementById("rif-desiderato").value = "";
+      document.getElementById("rif-desiderato-view").innerText = "es. 600";
 
       for (let i = 1; i <= 10; i++) {
-        ["peso","fuel-ini","acc","dec","att","spe","flt","tot","fuel-rim","fuel-des","rif-litri"].forEach(k => {
+        ["peso","fuel-ini","att","flt","tot","fuel-rim","fuel-des"].forEach(k => {
+          document.getElementById(`${k}-${i}`).value = "";
+          const v = document.getElementById(`${k}-${i}-view`);
+          if(v) v.innerText = "";
+        });
+        ["acc","dec","spe","rif-litri"].forEach(k => {
           document.getElementById(`${k}-${i}`).value = "";
         });
       }
@@ -415,23 +442,29 @@
       schedaCorrenteId = d.id;
       document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
       document.getElementById("data-registro").value = d.data || "";
+      
       document.getElementById("note-estese").value = d.note || "";
+      document.getElementById("note-estese-view").innerText = d.note || "Tocca qui per inserire le annotazioni...";
+      
       document.getElementById("rif-rimanente").value = d.rifRimanente || "";
+      document.getElementById("rif-rimanente-view").innerText = d.rifRimanente || "es. 250";
+      
       document.getElementById("rif-desiderato").value = d.rifDesiderato || "";
+      document.getElementById("rif-desiderato-view").innerText = d.rifDesiderato || "es. 600";
 
       (d.righe || []).forEach((r, idx) => {
         const i = idx + 1;
         if (i <= 10) {
-          document.getElementById(`peso-${i}`).value = r.peso || "";
-          document.getElementById(`fuel-ini-${i}`).value = r.fuelIni || "";
+          const mapFields = { peso: r.peso, fuelIni: r.fuelIni, att: r.att, flt: r.flt, tot: r.tot, fuelRim: r.fuelRim, fuelDes: r.fuelDes };
+          for (let k in mapFields) {
+            const realKey = k === 'fuelIni' ? 'fuel-ini' : (k === 'fuelRim' ? 'fuel-rim' : (k === 'fuelDes' ? 'fuel-des' : k));
+            document.getElementById(`${realKey}-${i}`).value = mapFields[k] || "";
+            const viewElem = document.getElementById(`${realKey}-${i}-view`);
+            if(viewElem) viewElem.innerText = mapFields[k] || "";
+          }
           document.getElementById(`acc-${i}`).value = r.acc || "";
           document.getElementById(`dec-${i}`).value = r.dec || "";
-          document.getElementById(`att-${i}`).value = r.att || "";
           document.getElementById(`spe-${i}`).value = r.spe || "";
-          document.getElementById(`flt-${i}`).value = r.flt || "";
-          document.getElementById(`tot-${i}`).value = r.tot || "";
-          document.getElementById(`fuel-rim-${i}`).value = r.fuelRim || "";
-          document.getElementById(`fuel-des-${i}`).value = r.fuelDes || "";
           document.getElementById(`rif-litri-${i}`).value = r.rifLitri || "";
         }
       });
@@ -521,9 +554,6 @@
       };
       reader.readAsText(file);
     }
-  </script>
-</body>
-</html>
   </script>
 </body>
 </html>
