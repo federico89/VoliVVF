@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Registro Voli Operativo VVF</title>
+  
+  <!-- PWA & Mobile Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#b91c1c">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; padding: 0 !important; }
+      .sheet-container { shadow: none !important; border: none !important; max-width: 100% !important; }
+    }
+    input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
+    .input-write { background-color: #fffde7; }
+    .input-write:focus { background-color: #ffffff; outline: 2px solid #eab308; }
+  </style>
+</head>
+<body class="bg-slate-200 text-slate-800 font-sans min-h-screen p-2 md:p-6">
+
+  <!-- BARRA DI CONTROLLO SUPERIORE -->
+  <header class="max-w-6xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-md border-l-8 border-red-700 flex flex-wrap gap-3 justify-between items-center no-print">
+    <div class="flex items-center space-x-3">
+      <div class="bg-red-700 text-white font-black p-2 rounded-lg text-lg">VVF</div>
+      <div>
+        <h1 class="font-bold text-slate-800 text-lg leading-tight">Registro Voli Operativo</h1>
+        <p class="text-xs text-slate-500">Reparto Volo Vigili del Fuoco • iPad WebApp</p>
+      </div>
+    </div>
+    
+    <div class="flex flex-wrap gap-2">
+      <button onclick="salvaSchedaCorrente()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center shadow">
+        💾 Salva
+      </button>
+      <button onclick="nuovaSchedaVergine()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center shadow">
+        📄 Nuovo Foglio
+      </button>
+      <button onclick="apriModalStorico()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center shadow">
+        📂 Storico (<span id="count-storico">0</span>)
+      </button>
+      <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center shadow">
+        🖨️ Stampa / PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENITORE PRINCIPALE (FOGLIO) -->
+  <main class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-xl shadow-xl border border-slate-300 sheet-container">
+    
+    <!-- HEADER SCHEDA -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 mb-4 border-b-2 border-red-700 items-center">
+      <div>
+        <h2 class="text-xl font-black text-red-800 tracking-wide uppercase">VIGILI DEL FUOCO</h2>
+        <p class="text-xs font-semibold text-slate-600">GIORNALE DI BORDO - REGISTRO VOLI</p>
+      </div>
+      <div class="text-center">
+        <label class="block text-xs font-bold text-slate-500 uppercase">Data Registro</label>
+        <input type="date" id="data-registro" onchange="aggiornaMetaInfo()" class="border-2 border-slate-300 rounded px-3 py-1 font-bold text-slate-800 text-center focus:border-red-600">
+      </div>
+      <div class="text-right">
+        <span class="inline-block bg-amber-100 text-amber-900 border border-amber-300 text-xs px-3 py-1 rounded font-mono">
+          ID: <span id="id-scheda-display" class="font-bold">---</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- LEGENDA COLORI -->
+    <div class="mb-4 p-2 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap gap-4 text-xs font-medium no-print">
+      <div class="flex items-center gap-1.5">
+        <span class="w-4 h-4 bg-amber-100 border border-amber-400 rounded"></span>
+        <span>Giallo: <strong>Campi manuali / Penna</strong></span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-4 h-4 bg-slate-100 border border-slate-300 rounded"></span>
+        <span>Azzurro/Grigio: <strong>Calcoli Automatici (Readonly)</strong></span>
+      </div>
+    </div>
+
+    <!-- TABELLA VOLI OPERATIVI (10 RIGHE) -->
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full text-xs text-left border-collapse border border-slate-300">
+        <thead class="bg-slate-800 text-white uppercase text-[11px] tracking-wider text-center">
+          <tr>
+            <th class="p-2 border border-slate-600 w-10">N°</th>
+            <th class="p-2 border border-slate-600">Peso Dec. (kg)</th>
+            <th class="p-2 border border-slate-600">Fuel Iniz. (kg)</th>
+            <th class="p-2 border border-slate-600 bg-sky-900">Ora Acc.</th>
+            <th class="p-2 border border-slate-600 bg-sky-900">Ora Dec.</th>
+            <th class="p-2 border border-slate-600 bg-amber-900">Ora Att.</th>
+            <th class="p-2 border border-slate-600 bg-sky-900">Ora Speg.</th>
+            <th class="p-2 border border-slate-600 bg-amber-900">Flight T. (HH:MM)</th>
+            <th class="p-2 border border-slate-600 bg-amber-900">Total T. (HH:MM)</th>
+            <th class="p-2 border border-slate-600">Fuel Rim. (kg)</th>
+            <th class="p-2 border border-slate-600">Fuel Des. (kg)</th>
+          </tr>
+        </thead>
+        <tbody id="flight-table-body">
+          <!-- Generato via JavaScript per 10 righe -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- NOTI E ANNOTAZIONI (ESTESA A TUTTA LARGHEZZA) -->
+    <div class="mb-6">
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annotazioni / Anomalie / Missioni Operative</label>
+      <textarea id="note-estese" oninput="salvaAutomaticoPausa()" rows="5" class="w-full input-write border border-slate-300 rounded-lg p-3 text-sm focus:border-red-600 font-sans resize-y" placeholder="Inserisci dettagli missione, verricello, Bambi Bucket, equipaggio o anomalie riscontrate..."></textarea>
+    </div>
+
+    <!-- CALCOLATORE RIFORNIMENTO JET-A1 (POSIZIONATO IN FONDO) -->
+    <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 shadow-sm">
+      <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2 border-b pb-2 border-slate-200">
+        ⛽ Rifornimento (Jet-A1 Avio • Densità 0.80 kg/L)
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Rimanente Totale (kg)</label>
+          <input type="number" id="rif-rimanente" oninput="calcolaRifornimento()" class="w-full input-write border border-slate-300 rounded p-2 text-base font-bold text-slate-800 text-center" placeholder="es. 250">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Desiderato Totale (kg)</label>
+          <input type="number" id="rif-desiderato" oninput="calcolaRifornimento()" class="w-full input-write border border-slate-300 rounded p-2 text-base font-bold text-slate-800 text-center" placeholder="es. 600">
+        </div>
+        <div class="bg-emerald-100 border border-emerald-400 p-3 rounded-lg text-center">
+          <label class="block text-xs font-bold text-emerald-900 uppercase">Rifornimento Necessario</label>
+          <div class="text-2xl font-black text-emerald-800" id="rif-risultato-litri">0 <span class="text-base font-normal">Litri</span></div>
+          <div class="text-xs text-emerald-700 mt-0.5" id="rif-risultato-kg">(0 kg da imbarcare)</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODALE STORICO SCHEDE -->
+  <div id="modal-storico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 no-print">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="p-4 bg-slate-800 text-white flex justify-between items-center">
+        <h3 class="font-bold text-lg">📂 Storico Registri Volo</h3>
+        <button onclick="chiudiModalStorico()" class="text-slate-400 hover:text-white font-bold text-xl">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1 space-y-2" id="lista-storico">
+        <!-- Generato via JS -->
+      </div>
+      <div class="p-4 bg-slate-100 border-t flex justify-between items-center text-xs">
+        <div class="flex gap-2">
+          <button onclick="esportaJSON()" class="bg-slate-700 text-white px-3 py-1.5 rounded font-bold hover:bg-slate-800">Export Backup (JSON)</button>
+          <label class="bg-slate-200 text-slate-800 px-3 py-1.5 rounded font-bold hover:bg-slate-300 cursor-pointer">
+            Importa Backup
+            <input type="file" onchange="importaJSON(event)" accept=".json" class="hidden">
+          </label>
+        </div>
+        <button onclick="chiudiModalStorico()" class="bg-slate-400 text-white px-4 py-1.5 rounded font-bold hover:bg-slate-500">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const KEY_STORAGE = "vvf_flight_logs_v1";
+    let schedaCorrenteId = null;
+
+    // Inizializzazione
+    document.addEventListener("DOMContentLoaded", () => {
+      costruisciTabella();
+      caricaOIniziaDati();
+      registraServiceWorker();
+    });
+
+    function registraServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+    }
+
+    function costruisciTabella() {
+      const tbody = document.getElementById("flight-table-body");
+      tbody.innerHTML = "";
+      for (let i = 1; i <= 10; i++) {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 border-b border-slate-200";
+        tr.innerHTML = `
+          <td class="p-1 border border-slate-300 text-center font-bold text-slate-500">${i}</td>
+          <td class="p-1 border border-slate-300"><input type="number" id="peso-${i}" oninput="salvaAutomaticoPausa()" class="w-full input-write p-1 rounded text-center"></td>
+          <td class="p-1 border border-slate-300"><input type="number" id="fuel-ini-${i}" oninput="salvaAutomaticoPausa()" class="w-full input-write p-1 rounded text-center"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="acc-${i}" readonly class="w-full p-1 rounded text-center font-bold text-slate-700"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="dec-${i}" readonly class="w-full p-1 rounded text-center font-bold text-slate-700"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="att-${i}" oninput="calcolaRiga(${i})" placeholder="10:30" class="w-full input-write p-1 rounded text-center font-bold"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="spe-${i}" readonly class="w-full p-1 rounded text-center font-bold text-slate-700"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="flt-${i}" oninput="calcolaRiga(${i})" placeholder="01:15" class="w-full input-write p-1 rounded text-center font-bold"></td>
+          <td class="p-1 border border-slate-300"><input type="text" id="tot-${i}" oninput="calcolaRiga(${i})" placeholder="01:25" class="w-full input-write p-1 rounded text-center font-bold"></td>
+          <td class="p-1 border border-slate-300"><input type="number" id="fuel-rim-${i}" oninput="salvaAutomaticoPausa()" class="w-full input-write p-1 rounded text-center"></td>
+          <td class="p-1 border border-slate-300"><input type="number" id="fuel-des-${i}" oninput="salvaAutomaticoPausa()" class="w-full input-write p-1 rounded text-center"></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Helper conversioni orarie
+    function parseHHMMToMinutes(val) {
+      if (!val || !val.includes(":")) return null;
+      const parts = val.split(":");
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
+    function formatMinutesToHHMM(totMin) {
+      if (totMin === null || isNaN(totMin)) return "";
+      let m = (totMin % 1440 + 1440) % 1440;
+      const hh = Math.floor(m / 60).toString().padStart(2, "0");
+      const mm = (m % 60).toString().padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    // Calcolo righe volo
+    function calcolaRiga(idx) {
+      const attVal = document.getElementById(`att-${idx}`).value.trim();
+      const fltVal = document.getElementById(`flt-${idx}`).value.trim();
+      const totVal = document.getElementById(`tot-${idx}`).value.trim();
+
+      const attMin = parseHHMMToMinutes(attVal);
+      const fltMin = parseHHMMToMinutes(fltVal);
+      const totMin = parseHHMMToMinutes(totVal);
+
+      const elAcc = document.getElementById(`acc-${idx}`);
+      const elDec = document.getElementById(`dec-${idx}`);
+      const elSpe = document.getElementById(`spe-${idx}`);
+
+      if (attMin !== null && fltMin !== null) {
+        const decMin = attMin - fltMin;
+        elDec.value = formatMinutesToHHMM(decMin);
+
+        if (totMin !== null && totMin >= fltMin) {
+          const deltaGround = totMin - fltMin;
+          let minusDec = 0;
+          let plusAtt = 0;
+
+          if (deltaGround === 5) { minusDec = 5; plusAtt = 0; }
+          else if (deltaGround === 10) { minusDec = 5; plusAtt = 5; }
+          else if (deltaGround === 15) { minusDec = 10; plusAtt = 5; }
+          else {
+            minusDec = Math.ceil(deltaGround / 10) * 5;
+            plusAtt = deltaGround - minusDec;
+          }
+
+          elAcc.value = formatMinutesToHHMM(decMin - minusDec);
+          elSpe.value = formatMinutesToHHMM(attMin + plusAtt);
+        } else {
+          elAcc.value = ""; elSpe.value = "";
+        }
+      } else {
+        elDec.value = ""; elAcc.value = ""; elSpe.value = "";
+      }
+      salvaAutomaticoPausa();
+    }
+
+    // Calcolo Rifornimento Jet-A1
+    function calcolaRifornimento() {
+      const rim = parseFloat(document.getElementById("rif-rimanente").value) || 0;
+      const des = parseFloat(document.getElementById("rif-desiderato").value) || 0;
+      const diffKg = Math.max(0, des - rim);
+      const litri = (diffKg * 1.25).toFixed(1);
+
+      document.getElementById("rif-risultato-litri").innerHTML = `${litri} <span class="text-base font-normal">Litri</span>`;
+      document.getElementById("rif-risultato-kg").innerText = `(${diffKg} kg da imbarcare)`;
+      salvaAutomaticoPausa();
+    }
+
+    // Storage Management
+    function ottieniTuttiIStorici() {
+      return JSON.parse(localStorage.getItem(KEY_STORAGE) || "{}");
+    }
+
+    function salvaSchedaCorrente() {
+      if (!schedaCorrenteId) schedaCorrenteId = "VVF_" + Date.now();
+      const dataReg = document.getElementById("data-registro").value;
+      const storici = ottieniTuttiIStorici();
+
+      const datiForm = {
+        id: schedaCorrenteId,
+        data: dataReg,
+        note: document.getElementById("note-estese").value,
+        rifRimanente: document.getElementById("rif-rimanente").value,
+        rifDesiderato: document.getElementById("rif-desiderato").value,
+        righe: []
+      };
+
+      for (let i = 1; i <= 10; i++) {
+        datiForm.righe.push({
+          peso: document.getElementById(`peso-${i}`).value,
+          fuelIni: document.getElementById(`fuel-ini-${i}`).value,
+          acc: document.getElementById(`acc-${i}`).value,
+          dec: document.getElementById(`dec-${i}`).value,
+          att: document.getElementById(`att-${i}`).value,
+          spe: document.getElementById(`spe-${i}`).value,
+          flt: document.getElementById(`flt-${i}`).value,
+          tot: document.getElementById(`tot-${i}`).value,
+          fuelRim: document.getElementById(`fuel-rim-${i}`).value,
+          fuelDes: document.getElementById(`fuel-des-${i}`).value,
+        });
+      }
+
+      storici[schedaCorrenteId] = datiForm;
+      localStorage.setItem(KEY_STORAGE, JSON.stringify(storici));
+      aggiornaBadgeStorico();
+    }
+
+    function nuovaSchedaVergine() {
+      schedaCorrenteId = "VVF_" + Date.now();
+      document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
+      document.getElementById("data-registro").valueAsDate = new Date();
+      document.getElementById("note-estese").value = "";
+      document.getElementById("rif-rimanente").value = "";
+      document.getElementById("rif-desiderato").value = "";
+
+      for (let i = 1; i <= 10; i++) {
+        ["peso","fuel-ini","acc","dec","att","spe","flt","tot","fuel-rim","fuel-des"].forEach(k => {
+          document.getElementById(`${k}-${i}`).value = "";
+        });
+      }
+      calcolaRifornimento();
+      salvaSchedaCorrente();
+    }
+
+    function caricaOIniziaDati() {
+      const storici = ottieniTuttiIStorici();
+      const keys = Object.keys(storici);
+      if (keys.length > 0) {
+        caricaScheda(keys[keys.length - 1]);
+      } else {
+        nuovaSchedaVergine();
+      }
+      aggiornaBadgeStorico();
+    }
+
+    function caricaScheda(id) {
+      const storici = ottieniTuttiIStorici();
+      const d = storici[id];
+      if (!d) return;
+
+      schedaCorrenteId = d.id;
+      document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
+      document.getElementById("data-registro").value = d.data || "";
+      document.getElementById("note-estese").value = d.note || "";
+      document.getElementById("rif-rimanente").value = d.rifRimanente || "";
+      document.getElementById("rif-desiderato").value = d.rifDesiderato || "";
+
+      (d.righe || []).forEach((r, idx) => {
+        const i = idx + 1;
+        if (i <= 10) {
+          document.getElementById(`peso-${i}`).value = r.peso || "";
+          document.getElementById(`fuel-ini-${i}`).value = r.fuelIni || "";
+          document.getElementById(`acc-${i}`).value = r.acc || "";
+          document.getElementById(`dec-${i}`).value = r.dec || "";
+          document.getElementById(`att-${i}`).value = r.att || "";
+          document.getElementById(`spe-${i}`).value = r.spe || "";
+          document.getElementById(`flt-${i}`).value = r.flt || "";
+          document.getElementById(`tot-${i}`).value = r.tot || "";
+          document.getElementById(`fuel-rim-${i}`).value = r.fuelRim || "";
+          document.getElementById(`fuel-des-${i}`).value = r.fuelDes || "";
+        }
+      });
+
+      calcolaRifornimento();
+      chiudiModalStorico();
+    }
+
+    let timerSalvataggio;
+    function salvaAutomaticoPausa() {
+      clearTimeout(timerSalvataggio);
+      timerSalvataggio = setTimeout(salvaSchedaCorrente, 800);
+    }
+
+    function aggiornaBadgeStorico() {
+      const storici = ottieniTuttiIStorici();
+      document.getElementById("count-storico").innerText = Object.keys(storici).length;
+    }
+
+    // Modal Storico
+    function apriModalStorico() {
+      const storici = ottieniTuttiIStorici();
+      const container = document.getElementById("lista-storico");
+      container.innerHTML = "";
+
+      const keys = Object.keys(storici).reverse();
+      if (keys.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-500 py-8">Nessun registro salvato.</div>`;
+      } else {
+        keys.forEach(k => {
+          const item = storici[k];
+          const div = document.createElement("div");
+          div.className = "flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100";
+          div.innerHTML = `
+            <div>
+              <div class="font-bold text-slate-800">Data: ${item.data || 'N.D.'}</div>
+              <div class="text-xs text-slate-500">ID: ${item.id}</div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="caricaScheda('${item.id}')" class="bg-sky-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-sky-700">Apri</button>
+              <button onclick="eliminaScheda('${item.id}')" class="bg-red-600 text-white text-xs px-2 py-1.5 rounded font-bold hover:bg-red-700">🗑️</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      document.getElementById("modal-storico").classList.remove("hidden");
+    }
+
+    function chiudiModalStorico() {
+      document.getElementById("modal-storico").classList.add("hidden");
+    }
+
+    function eliminaScheda(id) {
+      if (!confirm("Eliminare definitivamente questo registro?")) return;
+      const storici = ottieniTuttiIStorici();
+      delete storici[id];
+      localStorage.setItem(KEY_STORAGE, JSON.stringify(storici));
+      apriModalStorico();
+      aggiornaBadgeStorico();
+    }
+
+    // Backup JSON
+    function esportaJSON() {
+      const storici = localStorage.getItem(KEY_STORAGE) || "{}";
+      const blob = new Blob([storici], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `registro_voli_vvf_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importaJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          const attuali = ottieniTuttiIStorici();
+          Object.assign(attuali, imported);
+          localStorage.setItem(KEY_STORAGE, JSON.stringify(attuali));
+          alert("Importazione completata!");
+          apriModalStorico();
+          aggiornaBadgeStorico();
+        } catch (err) {
+          alert("Errore nel file di backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
