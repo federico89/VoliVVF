@@ -2,26 +2,34 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <!-- Configurazione viewport ottimizzata per tablet/iPad (disabilita lo zoom involontario) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Registro Voli Operativo VVF</title>
   
-  <!-- PWA & Mobile Settings -->
+  <!-- ================= CONFIGURAZIONI PWA & MOBILE ================= -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#b91c1c">
+  <meta name="theme-color" content="#b91c1c"> <!-- Colore barra di stato iOS (Rosso VVF) -->
   
+  <!-- Inclusione libreria grafica Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <style>
+    /* Regole CSS specifiche per la stampa cartacea o salvataggio PDF */
     @media print {
       .no-print { display: none !important; }
       body { background: white !important; padding: 0 !important; }
       .sheet-container { box-shadow: none !important; border: none !important; max-width: 100% !important; }
     }
+    
+    /* Stile personalizzato per i CAMPI MANUABILI (Giallo chiaro con bordo ambra) */
     .input-write { 
       background-color: #fffde7 !important; 
       border: 1.5px solid #facc15 !important; 
       cursor: pointer; 
     }
+    
+    /* Stile personalizzato per i CAMPI AUTOMATICI / CALCOLATI (Grigio chiaro non modificabile) */
     .input-auto { 
       background-color: #f1f5f9 !important; 
       border: 1px solid #cbd5e1 !important; 
@@ -31,7 +39,7 @@
 </head>
 <body class="bg-slate-200 text-slate-800 font-sans min-h-screen p-2 md:p-6">
 
-  <!-- BARRA DI CONTROLLO SUPERIORE -->
+  <!-- ================= BARRA DI CONTROLLO SUPERIORE (Non stampabile) ================= -->
   <header class="max-w-7xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-md border-l-8 border-red-700 flex flex-wrap gap-3 justify-between items-center no-print">
     <div class="flex items-center space-x-3">
       <div class="bg-red-700 text-white font-black p-2 rounded-lg text-lg">VVF</div>
@@ -41,6 +49,7 @@
       </div>
     </div>
     
+    <!-- Pulsanti di controllo principali -->
     <div class="flex flex-wrap gap-2">
       <button onclick="salvaSchedaCorrente()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center shadow">
         💾 Salva
@@ -57,10 +66,10 @@
     </div>
   </header>
 
-  <!-- CONTENITORE PRINCIPALE (FOGLIO) -->
+  <!-- ================= CONTENITORE PRINCIPALE (IL FOGLIO DI VOLO) ================= -->
   <main class="max-w-7xl mx-auto bg-white p-4 md:p-6 rounded-xl shadow-xl border border-slate-300 sheet-container">
     
-    <!-- HEADER SCHEDA -->
+    <!-- Intestazione della scheda (Titolo, Data e ID univoco) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 mb-4 border-b-2 border-red-700 items-center">
       <div>
         <h2 class="text-xl font-black text-red-800 tracking-wide uppercase">VIGILI DEL FUOCO</h2>
@@ -77,11 +86,11 @@
       </div>
     </div>
 
-    <!-- LEGENDA COLORI -->
+    <!-- Legenda colori esplicativa -->
     <div class="mb-4 p-2 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap gap-4 text-xs font-medium no-print">
       <div class="flex items-center gap-1.5">
         <span class="w-4 h-4 bg-[#fffde7] border border-yellow-400 rounded"></span>
-        <span>Giallo: <strong>Campi manuali (Tocca per inserire)</strong></span>
+        <span>Giallo: <strong>Campi manuali (Tocca per aprire il popup di inserimento)</strong></span>
       </div>
       <div class="flex items-center gap-1.5">
         <span class="w-4 h-4 bg-slate-200 border border-slate-400 rounded"></span>
@@ -89,7 +98,7 @@
       </div>
     </div>
 
-    <!-- TABELLA VOLI OPERATIVI (10 RIGHE) -->
+    <!-- ================= TABELLA VOLI OPERATIVI (10 RIGHE) ================= -->
     <div class="overflow-x-auto mb-6">
       <table class="w-full text-[11px] text-left border-collapse border border-slate-300">
         <thead class="bg-slate-800 text-white uppercase tracking-wider text-center">
@@ -109,19 +118,19 @@
           </tr>
         </thead>
         <tbody id="flight-table-body">
-          <!-- Generato via JavaScript -->
+          <!-- Le righe della tabella vengono generate dinamicamente via JavaScript -->
         </tbody>
       </table>
     </div>
 
-    <!-- NOTE E ANNOTAZIONI -->
+    <!-- ================= SEZIONE NOTE E ANNOTAZIONI ================= -->
     <div class="mb-6">
       <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annotazioni / Anomalie / Missioni Operative</label>
       <div onclick="apriPromptPopup('note-estese', 'Annotazioni / Missione', 'textarea')" id="note-estese-view" class="w-full input-write rounded-lg p-3 text-sm font-sans min-h-[90px] cursor-pointer whitespace-pre-wrap">Tocca qui per inserire le annotazioni...</div>
       <textarea id="note-estese" class="hidden"></textarea>
     </div>
 
-    <!-- CALCOLATORE RIFORNIMENTO JET-A1 IN FONDO -->
+    <!-- ================= CALCOLATORE RIFORNIMENTO JET-A1 IN FONDO ================= -->
     <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 shadow-sm">
       <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2 border-b pb-2 border-slate-200">
         ⛽ Rifornimento Totale Giornaliero (Jet-A1 Avio • Densità 0.80 kg/L)
@@ -147,7 +156,7 @@
 
   </main>
 
-  <!-- MODALE POPUP GRANDE PER INSERIMENTO FACILITATO -->
+  <!-- ================= FINSTRA MODALE (POPUP GRANDE PER INPUT DA TABLET) ================= -->
   <div id="modal-input" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 no-print">
     <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 flex flex-col space-y-4 border-2 border-red-700">
       <div class="flex justify-between items-center border-b pb-3">
@@ -155,6 +164,7 @@
         <button onclick="chiudiPromptPopup(false)" class="text-slate-400 hover:text-red-600 font-bold text-2xl">&times;</button>
       </div>
       
+      <!-- Contenitore dinamico dove viene inserito l'input o la textarea -->
       <div id="modal-body-container" class="py-2"></div>
 
       <div class="flex justify-end gap-3 pt-3 border-t">
@@ -164,7 +174,7 @@
     </div>
   </div>
 
-  <!-- MODALE STORICO SCHEDE -->
+  <!-- ================= FINSTRA MODALE STORICO SCHEDE ================= -->
   <div id="modal-storico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 no-print">
     <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
       <div class="p-4 bg-slate-800 text-white flex justify-between items-center">
@@ -185,23 +195,27 @@
     </div>
   </div>
 
+  <!-- ================= LOGICA JAVASCRIPT ================= -->
   <script>
-    const KEY_STORAGE = "vvf_flight_logs_v1";
-    let schedaCorrenteId = null;
-    let campoAttivoId = null;
+    const KEY_STORAGE = "vvf_flight_logs_v1"; // Chiave identificativa per il LocalStorage del browser
+    let schedaCorrenteId = null;              // ID univoco della scheda attualmente aperta
+    let campoAttivoId = null;                 // Riferimento al campo attivo nel popup modale
 
+    // Eseguito automaticamente all'avvio della pagina
     document.addEventListener("DOMContentLoaded", () => {
       costruisciTabella();
       caricaOIniziaDati();
       registraServiceWorker();
     });
 
+    // Registra il service worker per abilitare il funzionamento offline della PWA
     function registraServiceWorker() {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
     }
 
+    // Costruisce dinamicamente le 10 righe della tabella principale dei voli
     function costruisciTabella() {
       const tbody = document.getElementById("flight-table-body");
       tbody.innerHTML = "";
@@ -210,22 +224,36 @@
         tr.className = "hover:bg-slate-50 border-b border-slate-200";
         tr.innerHTML = `
           <td class="p-1 border border-slate-300 text-center font-bold text-slate-500">${i}</td>
+          <!-- Campi manuali (Gialli) -->
           <td class="p-1 border border-slate-300"><div id="peso-${i}-view" onclick="apriPromptPopup('peso-${i}', 'Volo ${i} - Peso Decollo (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="peso-${i}"></td>
           <td class="p-1 border border-slate-300"><div id="fuel-ini-${i}-view" onclick="apriPromptPopup('fuel-ini-${i}', 'Volo ${i} - Fuel Iniziale (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-ini-${i}"></td>
+          
+          <!-- Campi automatici in sola lettura (Grigi) -->
           <td class="p-1 border border-slate-300"><input type="text" id="acc-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
           <td class="p-1 border border-slate-300"><input type="text" id="dec-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
+          
+          <!-- Campo manuale Atterraggio -->
           <td class="p-1 border border-slate-300"><div id="att-${i}-view" onclick="apriPromptPopup('att-${i}', 'Volo ${i} - Ora Atterraggio (es. 10:30)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="att-${i}"></td>
+          
+          <!-- Campo automatico Spegnimento -->
           <td class="p-1 border border-slate-300"><input type="text" id="spe-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto"></td>
+          
+          <!-- Campi manuali Flight Time e Total Time -->
           <td class="p-1 border border-slate-300"><div id="flt-${i}-view" onclick="apriPromptPopup('flt-${i}', 'Volo ${i} - Flight Time (es. 01:15)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="flt-${i}"></td>
           <td class="p-1 border border-slate-300"><div id="tot-${i}-view" onclick="apriPromptPopup('tot-${i}', 'Volo ${i} - Total Time (es. 01:25)', 'text')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="tot-${i}"></td>
+          
+          <!-- Campi manuali Fuel Rimanente e Desiderato -->
           <td class="p-1 border border-slate-300"><div id="fuel-rim-${i}-view" onclick="apriPromptPopup('fuel-rim-${i}', 'Volo ${i} - Fuel Rimanente (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-rim-${i}"></td>
           <td class="p-1 border border-slate-300"><div id="fuel-des-${i}-view" onclick="apriPromptPopup('fuel-des-${i}', 'Volo ${i} - Fuel Desiderato (kg)', 'number')" class="w-full input-write p-2 rounded text-center font-bold text-slate-800 cursor-pointer min-h-[26px]"></div><input type="hidden" id="fuel-des-${i}"></td>
+          
+          <!-- Campo calcolato Rifornimento Litri riga -->
           <td class="p-1 border border-slate-300 bg-slate-100"><input type="text" id="rif-litri-${i}" readonly class="w-full p-1.5 rounded text-center font-bold text-slate-700 input-auto" placeholder="0 L"></td>
         `;
         tbody.appendChild(tr);
       }
     }
 
+    // Apre il popup grande di inserimento al tocco della cella
     function apriPromptPopup(elemId, titolo, tipoInput) {
       campoAttivoId = elemId;
       document.getElementById("modal-title").innerText = titolo;
@@ -245,9 +273,11 @@
       }, 150);
     }
 
+    // Chiude il popup modale confermando o annullando il valore inserito
     function chiudiPromptPopup(conferma) {
       if (conferma && campoAttivoId) {
-        const nuovoVal = document.getElementById("popup-input-val").value;
+        const valInput = document.getElementById("popup-input-val");
+        const nuovoVal = valInput ? valInput.value : "";
         document.getElementById(campoAttivoId).value = nuovoVal;
         
         const viewElem = document.getElementById(campoAttivoId + "-view");
@@ -255,11 +285,12 @@
           viewElem.innerText = nuovoVal || (campoAttivoId.includes("note") ? "Tocca qui per inserire le annotazioni..." : "");
         }
 
+        // Trigger calcoli specifici in base al campo modificato
         if (campoAttivoId.startsWith("att-") || campoAttivoId.startsWith("flt-") || campoAttivoId.startsWith("tot-")) {
           const idx = campoAttivoId.split("-")[1];
           calcolaRiga(idx);
         } else if (campoAttivoId.startsWith("fuel-rim-") || campoAttivoId.startsWith("fuel-des-")) {
-          const idx = campoAttivoId.split("-")[1];
+          const idx = campoAttivoId.split("-")[2];
           calcolaRigaRif(idx);
         } else if (campoAttivoId === "rif-rimanente" || campoAttivoId === "rif-desiderato") {
           calcolaRifornimento();
@@ -271,6 +302,7 @@
       campoAttivoId = null;
     }
 
+    // Converte una stringa oraria "HH:MM" in minuti totali trascorsi dalla mezzanotte
     function parseHHMMToMinutes(val) {
       if (!val || !val.includes(":")) return null;
       const parts = val.split(":");
@@ -280,6 +312,7 @@
       return h * 60 + m;
     }
 
+    // Converte i minuti totali in formato stringa "HH:MM"
     function formatMinutesToHHMM(totMin) {
       if (totMin === null || isNaN(totMin)) return "";
       let m = (totMin % 1440 + 1440) % 1440;
@@ -288,6 +321,7 @@
       return `${hh}:${mm}`;
     }
 
+    // Calcola in automatico orari di accensione, decollo e spegnimento riga per riga
     function calcolaRiga(idx) {
       const attVal = document.getElementById(`att-${idx}`).value.trim();
       const fltVal = document.getElementById(`flt-${idx}`).value.trim();
@@ -329,6 +363,7 @@
       salvaSchedaCorrente();
     }
 
+    // Calcola il rifornimento in litri riga per riga (Fattore 1.25 per densità 0.80 kg/L)
     function calcolaRigaRif(idx) {
       const rim = parseFloat(document.getElementById(`fuel-rim-${idx}`).value) || 0;
       const des = parseFloat(document.getElementById(`fuel-des-${idx}`).value) || 0;
@@ -339,6 +374,7 @@
       salvaSchedaCorrente();
     }
 
+    // Calcola il rifornimento totale giornaliero in fondo alla pagina
     function calcolaRifornimento() {
       const rim = parseFloat(document.getElementById("rif-rimanente").value) || 0;
       const des = parseFloat(document.getElementById("rif-desiderato").value) || 0;
@@ -356,10 +392,12 @@
       salvaSchedaCorrente();
     }
 
+    // Recupera lo storico dei dati salvati in LocalStorage
     function ottieniTuttiIStorici() {
       return JSON.parse(localStorage.getItem(KEY_STORAGE) || "{}");
     }
 
+    // Salva la scheda corrente nello storage del browser
     function salvaSchedaCorrente() {
       if (!schedaCorrenteId) schedaCorrenteId = "VVF_" + Date.now();
       const dataReg = document.getElementById("data-registro").value;
@@ -395,6 +433,7 @@
       aggiornaBadgeStorico();
     }
 
+    // Crea un nuovo foglio vergine pulendo tutti i campi
     function nuovaSchedaVergine() {
       schedaCorrenteId = "VVF_" + Date.now();
       document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
@@ -421,6 +460,7 @@
       salvaSchedaCorrente();
     }
 
+    // Carica l'ultima scheda salvata o ne crea una nuova se vuota
     function caricaOIniziaDati() {
       const storici = ottieniTuttiIStorici();
       const keys = Object.keys(storici);
@@ -432,6 +472,7 @@
       aggiornaBadgeStorico();
     }
 
+    // Carica una specifica scheda dallo storico salvato
     function caricaScheda(id) {
       const storici = ottieniTuttiIStorici();
       const d = storici[id];
@@ -482,6 +523,7 @@
       document.getElementById("count-storico").innerText = Object.keys(storici).length;
     }
 
+    // Gestione finestra modale dello Storico
     function apriModalStorico() {
       const storici = ottieniTuttiIStorici();
       const container = document.getElementById("lista-storico");
@@ -524,6 +566,7 @@
       aggiornaBadgeStorico();
     }
 
+    // Esportazione ed Importazione dei dati in formato JSON (Backup)
     function esportaJSON() {
       const storici = localStorage.getItem(KEY_STORAGE) || "{}";
       const blob = new Blob([storici], { type: "application/json" });
