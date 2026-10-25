@@ -15,7 +15,7 @@
     @media print {
       .no-print { display: none !important; }
       body { background: white !important; padding: 0 !important; }
-      .sheet-container { shadow: none !important; border: none !important; max-width: 100% !important; }
+      .sheet-container { box-shadow: none !important; border: none !important; max-width: 100% !important; }
     }
     input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
     .input-write { background-color: #fffde7; }
@@ -106,7 +106,7 @@
       </table>
     </div>
 
-    <!-- NOTI E ANNOTAZIONI (ESTESA A TUTTA LARGHEZZA) -->
+    <!-- NOTE E ANNOTAZIONI (ESTESA A TUTTA LARGHEZZA) -->
     <div class="mb-6">
       <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Annotazioni / Anomalie / Missioni Operative</label>
       <textarea id="note-estese" oninput="salvaAutomaticoPausa()" rows="5" class="w-full input-write border border-slate-300 rounded-lg p-3 text-sm focus:border-red-600 font-sans resize-y" placeholder="Inserisci dettagli missione, verricello, Bambi Bucket, equipaggio o anomalie riscontrate..."></textarea>
@@ -330,129 +330,6 @@
     function caricaOIniziaDati() {
       const storici = ottieniTuttiIStorici();
       const keys = Object.keys(storici);
-      if (keys.length > 0) {
-        caricaScheda(keys[keys.length - 1]);
-      } else {
-        nuovaSchedaVergine();
-      }
-      aggiornaBadgeStorico();
-    }
-
-    function caricaScheda(id) {
-      const storici = ottieniTuttiIStorici();
-      const d = storici[id];
-      if (!d) return;
-
-      schedaCorrenteId = d.id;
-      document.getElementById("id-scheda-display").innerText = schedaCorrenteId.slice(-6);
-      document.getElementById("data-registro").value = d.data || "";
-      document.getElementById("note-estese").value = d.note || "";
-      document.getElementById("rif-rimanente").value = d.rifRimanente || "";
-      document.getElementById("rif-desiderato").value = d.rifDesiderato || "";
-
-      (d.righe || []).forEach((r, idx) => {
-        const i = idx + 1;
-        if (i <= 10) {
-          document.getElementById(`peso-${i}`).value = r.peso || "";
-          document.getElementById(`fuel-ini-${i}`).value = r.fuelIni || "";
-          document.getElementById(`acc-${i}`).value = r.acc || "";
-          document.getElementById(`dec-${i}`).value = r.dec || "";
-          document.getElementById(`att-${i}`).value = r.att || "";
-          document.getElementById(`spe-${i}`).value = r.spe || "";
-          document.getElementById(`flt-${i}`).value = r.flt || "";
-          document.getElementById(`tot-${i}`).value = r.tot || "";
-          document.getElementById(`fuel-rim-${i}`).value = r.fuelRim || "";
-          document.getElementById(`fuel-des-${i}`).value = r.fuelDes || "";
-        }
-      });
-
-      calcolaRifornimento();
-      chiudiModalStorico();
-    }
-
-    let timerSalvataggio;
-    function salvaAutomaticoPausa() {
-      clearTimeout(timerSalvataggio);
-      timerSalvataggio = setTimeout(salvaSchedaCorrente, 800);
-    }
-
-    function aggiornaBadgeStorico() {
-      const storici = ottieniTuttiIStorici();
-      document.getElementById("count-storico").innerText = Object.keys(storici).length;
-    }
-
-    // Modal Storico
-    function apriModalStorico() {
-      const storici = ottieniTuttiIStorici();
-      const container = document.getElementById("lista-storico");
-      container.innerHTML = "";
-
-      const keys = Object.keys(storici).reverse();
-      if (keys.length === 0) {
-        container.innerHTML = `<div class="text-center text-slate-500 py-8">Nessun registro salvato.</div>`;
-      } else {
-        keys.forEach(k => {
-          const item = storici[k];
-          const div = document.createElement("div");
-          div.className = "flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100";
-          div.innerHTML = `
-            <div>
-              <div class="font-bold text-slate-800">Data: ${item.data || 'N.D.'}</div>
-              <div class="text-xs text-slate-500">ID: ${item.id}</div>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="caricaScheda('${item.id}')" class="bg-sky-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-sky-700">Apri</button>
-              <button onclick="eliminaScheda('${item.id}')" class="bg-red-600 text-white text-xs px-2 py-1.5 rounded font-bold hover:bg-red-700">🗑️</button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      }
-      document.getElementById("modal-storico").classList.remove("hidden");
-    }
-
-    function chiudiModalStorico() {
-      document.getElementById("modal-storico").classList.add("hidden");
-    }
-
-    function eliminaScheda(id) {
-      if (!confirm("Eliminare definitivamente questo registro?")) return;
-      const storici = ottieniTuttiIStorici();
-      delete storici[id];
-      localStorage.setItem(KEY_STORAGE, JSON.stringify(storici));
-      apriModalStorico();
-      aggiornaBadgeStorico();
-    }
-
-    // Backup JSON
-    function esportaJSON() {
-      const storici = localStorage.getItem(KEY_STORAGE) || "{}";
-      const blob = new Blob([storici], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `registro_voli_vvf_backup_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-    }
-
-    function importaJSON(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const imported = JSON.parse(evt.target.result);
-          const attuali = ottieniTuttiIStorici();
-          Object.assign(attuali, imported);
-          localStorage.setItem(KEY_STORAGE, JSON.stringify(attuali));
-          alert("Importazione completata!");
-          apriModalStorico();
-          aggiornaBadgeStorico();
-        } catch (err) {
-          alert("Errore nel file di backup.");
-        }
-      };
-      reader.readAsText(file);
-    }
   </script>
 </body>
 </html>
